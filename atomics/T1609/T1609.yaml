@@ -1,5 +1,5 @@
 attack_technique: T1609
-display_name: Kubernetes Exec Into Container
+display_name: Exec Into Container
 atomic_tests:
 - name: ExecIntoContainer
   auto_generated_guid: d03bfcd3-ed87-49c8-8880-44bb772dea4b
@@ -29,5 +29,34 @@ atomic_tests:
       kubectl exec -n #{namespace} busybox -- #{command}
     cleanup_command: |
       kubectl delete pod busybox -n #{namespace}
+    name: bash
+    elevation_required: false
+atomic_tests:
+- name: DockerExecIntoContainer
+  auto_generated_guid: da3bfcd3-ed87-49c8-8880-44bb772dea4b
+  description: |
+    Attackers who have permissions, can run malicious commands in containers in the cluster using exec command (“docker exec”). In this method, attackers can use legitimate images, such as an OS image (e.g., Ubuntu) as a backdoor container, and run their malicious code remotely by using “kubectl exec”.
+  supported_platforms:
+  - containers
+  input_arguments:
+    command:
+      description: Command to run
+      type: String
+      default: cat 
+  dependencies:
+  - description: |
+      docker must be installed
+    get_prereq_command: |
+            if [ "" == "`which docker`" ]; then echo "Docker Not Found"; if [ -n "`which apt-get`" ]; then sudo apt-get -y install docker ; elif [ -n "`which yum`" ]; then sudo yum -y install docker ; fi ; else echo "Docker installed"; fi
+    prereq_command: |
+      which docker
+  executor:
+    command: |
+       docker build -t t1609  src/ 
+      docker run --name t1609_container --rm -itd t1609 bash /tmp/script.sh
+      docker exec -it t1609_container cat /tmp/output.txt
+    cleanup_command: |
+      docker stop t1609_container
+      docker rmi -f t1609:latest 
     name: bash
     elevation_required: false
